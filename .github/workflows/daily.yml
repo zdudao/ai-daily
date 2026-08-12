@@ -1,0 +1,44 @@
+# 每日自动生成 AI 实体洞察日报并发布到仓库
+# cron: UTC 00:00 = 北京时间 08:00
+name: daily-report
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv & Python 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create .env from secrets
+        run: |
+          echo "DEEPSEEK_API_KEY=${{ secrets.DEEPSEEK_API_KEY }}" > .env
+          echo "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}" >> .env
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Fetch news & score (auto-render daily HTML)
+        run: uv run python -m src.main fetch
+
+      - name: Ensure daily report HTML
+        run: uv run python -m src.main daily --no-deduce
+
+      - name: Commit & push report
+        run: |
+          git config user.name "ai-daily-bot"
+          git config user.email "ai-daily-bot@users.noreply.github.com"
+          git add -f config.json news-data/daily-*.html news-data/score-log-*.md
+          git diff --cached --quiet || git commit -m "chore: daily report $(date +%F)"
+          git push

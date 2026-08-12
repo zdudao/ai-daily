@@ -40,3 +40,5 @@ news-data/
 
 # Git worktrees
 .worktrees/
+
+.codebuddy

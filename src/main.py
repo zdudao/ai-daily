@@ -41,8 +41,10 @@ from src.storage import (
     load_recent_notify_content,
     load_recent_push_content,
     read_entries,
+    save_fetch_file,
     save_notify_file,
     save_push_file,
+    save_score_log,
 )
 
 
@@ -153,8 +155,12 @@ def collect_entries_for_push(
         f"📋 收集总条目: {len(all_entries)} 条 , context_days: {context_days}, min_score:{min_score}"
     )
 
-    # 按 min_score 过滤
-    qualified_entries = [e for e in all_entries if (e.get("score") or 0) >= min_score]
+    # 按 min_score 过滤，且剔除与实体无关的新闻（entity_relevant=false）
+    qualified_entries = [
+        e
+        for e in all_entries
+        if e.get("entity_relevant", True) and (e.get("score") or 0) >= min_score
+    ]
     print(f"📋 过滤后条目: {len(qualified_entries)} 条 ")
 
     # 计算推送时间边界：max(last_push_time, now - 24h)
@@ -240,6 +246,9 @@ async def run_fetch_job(config: Dict):
         print(f"⚠️ [score_batch] {len(score_errors)} 个错误: {score_errors[0]}")
         await notify_llm_errors("score_batch", score_errors, config)
 
+    # 保存评分日志：每条新闻的原始内容 + LLM 打分理由 + 最终判定
+    save_score_log(scored, config)
+
     is_new_file = not os.path.exists(fetch_file)
     if is_new_file:
         cleanup_old_files(days=config["filter"]["keep_days"])
@@ -262,7 +271,11 @@ async def run_fetch_job(config: Dict):
 
     hot_threshold = config["filter"]["hot_threshold"]
     no_content_marker = config["filter"].get("no_content_marker", "[NO_NEW_CONTENT]")
-    hot_entries = [e for e in scored if (e.get("score") or 0) >= hot_threshold]
+    hot_entries = [
+        e
+        for e in scored
+        if e.get("entity_relevant", True) and (e.get("score") or 0) >= hot_threshold
+    ]
     if hot_entries:
         print(f"🔥 发现 {len(hot_entries)} 条热点消息，即时推送...")
 
@@ -316,6 +329,48 @@ async def run_fetch_job(config: Dict):
             print(f"💾 已保存即时推送到 {notify_file}")
 
     print(f"✅ Fetch Job 完成 | 新消息: {len(scored)} 条 | 热点: {len(hot_entries)} 条")
+
+    # 生成实体洞察日报 HTML（读取当天全部 fetch 数据，精选缺推演的自动补齐）
+    try:
+        from src.html_render import save_entity_report
+        from src.llm import generate_deduction
+
+        d = now_local(config).date()
+        all_entries = read_entries(fetch_file)
+        min_score = config["filter"]["min_score"]
+        qualified = [
+            e
+            for e in all_entries
+            if e.get("entity_relevant", True) and (e.get("score") or 0) >= min_score
+        ]
+        # 仅高分级（≥ deduce_min_score）缺失推演时自动补齐
+        deduce_min = config["filter"].get("deduce_min_score", 65)
+        missing = [
+            e
+            for e in qualified
+            if not e.get("deduce") and (e.get("score") or 0) >= deduce_min
+        ]
+        if missing:
+            print(f"🧭 为 {len(missing)} 条高分级精选补齐顾问行动卡片...")
+            sem = asyncio.Semaphore(3)
+
+            async def deduce_one(e):
+                async with sem:
+                    deduce_data, err = await generate_deduction(e, config["llm"])
+                    if err:
+                        print(f"  ⚠️ {e.get('title', '')[:30]}: {err}")
+                        return
+                    e["deduce"] = deduce_data
+
+            await asyncio.gather(*(deduce_one(e) for e in missing))
+            by_link = {e.get("link"): e for e in all_entries if e.get("deduce")}
+            updated = [by_link.get(e.get("link"), e) for e in all_entries]
+            save_fetch_file(fetch_file, {"date": d.isoformat()}, updated)
+            print(f"💾 推演结果已回写: {fetch_file}")
+        save_entity_report(all_entries, config, d.isoformat())
+        print(f"✅ 实体洞察日报已生成")
+    except Exception as e:
+        print(f"⚠️ 生成实体洞察日报失败: {e}")
 
 
 async def run_push_job(config: Dict):
@@ -566,6 +621,65 @@ async def cmd_check(config: Dict) -> int:
     return 0
 
 
+async def cmd_daily(config: Dict, day: str = None, deduce: bool = True) -> int:
+    """生成指定日期的实体洞察日报 HTML（默认今天）
+
+    Args:
+        day: 日期 YYYY-MM-DD，默认今天
+        deduce: 是否对精选新闻生成五步推演（默认 True）
+    """
+    from src.html_render import save_entity_report
+    from src.llm import generate_deduction
+
+    tz = get_timezone(config)
+    d = date.fromisoformat(day) if day else datetime.now(tz).date()
+    fetch_file = get_fetch_file(d)
+    entries = read_entries(fetch_file)
+    if not entries:
+        print(f"⚠️ 无数据: {fetch_file}")
+        return 1
+
+    min_score = config["filter"]["min_score"]
+    qualified = [
+        e
+        for e in entries
+        if e.get("entity_relevant", True) and (e.get("score") or 0) >= min_score
+    ]
+    print(f"📊 实体精选 {len(qualified)} 条（≥{min_score} 分）")
+
+    if deduce and qualified:
+        # 仅高分级（≥ deduce_min_score）生成顾问行动卡片；低分级保留已有推演
+        import asyncio as _asyncio
+
+        deduce_min = config["filter"].get("deduce_min_score", 65)
+        targets = [
+            e for e in qualified if (e.get("score") or 0) >= deduce_min
+        ]
+        print(f"🧭 生成顾问行动卡片中（{len(targets)} 条，≥{deduce_min} 分）...")
+
+        sem = _asyncio.Semaphore(3)
+
+        async def deduce_one(e):
+            async with sem:
+                deduce_data, err = await generate_deduction(e, config["llm"])
+                if err:
+                    print(f"  ⚠️ {e.get('title', '')[:30]}: {err}")
+                    return e
+                e["deduce"] = deduce_data
+                return e
+
+        targets = list(await _asyncio.gather(*(deduce_one(e) for e in targets)))
+        # 回写带推演的条目到 fetch 文件
+        by_link = {e.get("link"): e for e in targets if e.get("deduce")}
+        updated = [by_link.get(e.get("link"), e) for e in entries]
+        save_fetch_file(fetch_file, {"date": d.isoformat()}, updated)
+        print(f"💾 推演结果已回写: {fetch_file}")
+
+    path = save_entity_report(entries, config, d.isoformat())
+    print(f"✅ 实体洞察日报: {path}")
+    return 0
+
+
 async def cmd_fetch(config: Dict) -> int:
     """单次抓取（systemd timer 调用）"""
     try:
@@ -680,6 +794,13 @@ def _parse_args() -> argparse.Namespace:
     sub.add_parser("rss", help="单独跑一次 RSS Digest 板块（仅打印,不推送）")
     sub.add_parser("github", help="单独跑一次 GitHub Trending 板块（仅打印,不推送）")
     sub.add_parser("hackernews", help="单独跑一次 Hacker News 板块（仅打印,不推送）")
+    p_daily = sub.add_parser("daily", help="生成实体洞察日报 HTML（可加日期参数 YYYY-MM-DD）")
+    p_daily.add_argument("day", nargs="?", default=None, help="日期 YYYY-MM-DD，默认今天")
+    p_daily.add_argument(
+        "--no-deduce",
+        action="store_true",
+        help="跳过五步推演（仅重新渲染已有数据的 HTML）",
+    )
     return parser.parse_args()
 
 
@@ -702,7 +823,13 @@ def main() -> int:
         "rss": cmd_rss,
         "github": cmd_github,
         "hackernews": cmd_hackernews,
+        "daily": cmd_daily,
     }
+
+    if args.command == "daily":
+        day = getattr(args, "day", None)
+        deduce = not getattr(args, "no_deduce", False)
+        return asyncio.run(cmd_daily(config, day, deduce=deduce))
     return asyncio.run(handlers[args.command](config))
 
 

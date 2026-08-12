@@ -9,6 +9,12 @@ from typing import Dict, List, Optional
 from src.config import get_timezone
 from src.markdown_utils import dump_frontmatter, parse_frontmatter
 
+# 延迟导入避免循环:html_render 仅依赖 markdown_utils,不依赖 storage
+def _render_html_for_md(md_filepath: str, title: str, footer_note: str = ""):
+    from src.html_render import generate_html_file
+
+    return generate_html_file(md_filepath, title, footer_note)
+
 
 def get_fetch_file(d: date = None, data_dir: str = "news-data") -> str:
     """获取fetch文件路径 (使用配置时区)"""
@@ -54,6 +60,10 @@ def save_notify_file(
 
     with open(path, "a", encoding="utf-8") as f:
         f.write(new_content)
+
+    # 同步生成同名的 HTML 页面（每天一个，便于浏览器阅读）
+    title = metadata.get("title", "AI Daily 快讯") if metadata else "AI Daily 快讯"
+    _render_html_for_md(str(path), title, f"更新时间: {notify_time}")
 
 
 _SECTION_RE_CACHE: Dict[str, re.Pattern] = {}
@@ -385,6 +395,11 @@ def save_push_file(
     with open(path, "w", encoding="utf-8") as f:
         f.write(full_content)
 
+    # 同步生成同名的 HTML 页面
+    title = metadata.get("title", "AI Daily 每日精选") if metadata else "AI Daily 每日精选"
+    push_time = frontmatter_dict.get("pushDate", "")
+    _render_html_for_md(str(path), title, f"推送时间: {push_time}")
+
 
 def load_existing_links(filepath: str, threshold: int = 150) -> set:
     """加载文件中已有的链接（用于去重）
@@ -422,6 +437,115 @@ def load_existing_links(filepath: str, threshold: int = 150) -> set:
         )
 
     return all_links
+
+
+def save_score_log(
+    entries: List[Dict],
+    config: Dict,
+    data_dir: str = "news-data",
+) -> str:
+    """保存评分日志（Markdown）：每条新闻的原始内容、LLM 打分理由、实体洞察、最终判定结果。
+
+    判定规则：
+    - 与实体无关（entity_relevant=false）→ 🚫 无关（保留在日志，不进入精选/热点）
+    - score >= hot_threshold → 🔥 热点（即时推送）
+    - min_score <= score < hot_threshold → 📰 精选（进每日 digest）
+    - score < min_score → 🗑️ 过滤（丢弃）
+
+    Args:
+        entries: 评分后的条目（含 score / reason / entity_relevant / entity_insight）
+        config: 完整配置（读取 filter.hot_threshold / filter.min_score）
+
+    Returns:
+        生成的日志文件路径
+    """
+    hot_threshold = config["filter"]["hot_threshold"]
+    min_score = config["filter"]["min_score"]
+
+    tz = get_timezone()
+    now = datetime.now(tz)
+    today = now.date().isoformat()
+
+    def verdict(e: Dict) -> str:
+        if not e.get("entity_relevant", True):
+            return "🚫 与实体无关（日志保留）"
+        score = e.get("score") or 0
+        if score >= hot_threshold:
+            return "🔥 热点（即时推送）"
+        if score >= min_score:
+            return "📰 精选（每日 digest）"
+        return "🗑️ 过滤（丢弃）"
+
+    sorted_entries = sorted(entries, key=lambda e: e.get("score") or 0, reverse=True)
+    relevant = [e for e in sorted_entries if e.get("entity_relevant", True)]
+    hot_count = sum(
+        1 for e in relevant if (e.get("score") or 0) >= hot_threshold
+    )
+    digest_count = sum(
+        1
+        for e in relevant
+        if min_score <= (e.get("score") or 0) < hot_threshold
+    )
+    filtered_count = sum(
+        1 for e in relevant if (e.get("score") or 0) < min_score
+    )
+    irrelevant_count = len(sorted_entries) - len(relevant)
+
+    lines = [
+        "---",
+        f'date: "{today}"',
+        f'hot_threshold: {hot_threshold}',
+        f'min_score: {min_score}',
+        f'generated_at: "{now.isoformat()}"',
+        "---",
+        "",
+        f"# AI Daily 评分日志 {today}",
+        "",
+        f"- 总条目: {len(sorted_entries)}",
+        f"- 🔥 热点(≥{hot_threshold}): {hot_count}",
+        f"- 📰 精选({min_score}-{hot_threshold - 1}): {digest_count}",
+        f"- 🗑️ 过滤(<{min_score}): {filtered_count}",
+        f"- 🚫 与实体无关: {irrelevant_count}",
+        "",
+        "---",
+        "",
+    ]
+
+    for i, e in enumerate(sorted_entries, 1):
+        score = e.get("score") or 0
+        content = (e.get("content") or "").strip().replace("\n", " ")
+        if len(content) > 500:
+            content = content[:500] + "…"
+        relevant = e.get("entity_relevant", True)
+        industry = "、".join(e.get("entity_industry", []) or []) or "—"
+        alternative = "、".join(e.get("entity_alternative", []) or []) or "—"
+        lines += [
+            f"## [{score}] {e.get('title', '无标题')}",
+            "",
+            f"- **来源**: {e.get('source', '未知')}",
+            f"- **链接**: {e.get('link', '')}",
+            f"- **判定**: {verdict(e)}",
+            f"- **实体相关**: {'✅' if relevant else '❌'}",
+            f"- **适用行业**: {industry}",
+            f"- **成熟度**: {e.get('entity_maturity', '—')}",
+            f"- **使用门槛**: {e.get('entity_effort', '—')}",
+            f"- **行动建议**: {e.get('entity_advice', '—')}",
+            f"- **国产替代**: {alternative}",
+            f"- **实体洞察**: {e.get('entity_insight') or '（无）'}",
+            f"- **标签**: {', '.join(e.get('tags', []) or [])}",
+            f"- **打分理由**: {e.get('reason') or '（LLM 未返回理由）'}",
+            f"- **摘要**: {e.get('summary', '')}",
+            f"- **原文**: {content}",
+            "",
+            "---",
+            "",
+        ]
+
+    path = Path(data_dir) / f"score-log-{today}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"📝 评分日志已保存: {path}")
+    return str(path)
 
 
 def cleanup_old_files(days: int = 7, data_dir: str = "news-data"):

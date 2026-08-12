@@ -155,6 +155,74 @@ def _parse_llm_json_response(response: str) -> List[Dict]:
     raise ValueError(f"无法从响应中解析JSON: {response[:200]}...")
 
 
+def _repair_json_text(text: str) -> str:
+    """修复 LLM 常在字符串值内输出裸换行/回车的问题（替换为 \\n）"""
+    out = []
+    in_str = False
+    escaped = False
+    for ch in text:
+        if in_str:
+            if escaped:
+                out.append(ch)
+                escaped = False
+            elif ch == "\\":
+                out.append(ch)
+                escaped = True
+            elif ch == '"':
+                out.append(ch)
+                in_str = False
+            elif ch in "\r\n":
+                out.append("\\n")
+            else:
+                out.append(ch)
+        else:
+            if ch == '"':
+                in_str = True
+                out.append(ch)
+            else:
+                out.append(ch)
+    return "".join(out)
+
+
+def _repair_json_quotes(text: str) -> str:
+    """修复 LLM 在字符串值内输出未转义双引号的问题。
+
+    字符串内部的 `"`（其后非 `,` `}` `]` `:` 等 JSON 结构符时）转义为 `\\"`，
+    避免 `json.loads` 提前截断字符串。
+    """
+    out = []
+    i = 0
+    n = len(text)
+    in_str = False
+    while i < n:
+        ch = text[i]
+        if in_str:
+            if ch == "\\":
+                out.append(ch)
+                if i + 1 < n:
+                    out.append(text[i + 1])
+                    i += 1
+            elif ch == '"':
+                j = i + 1
+                while j < n and text[j] in " \t\r\n":
+                    j += 1
+                if j < n and text[j] in ",}]:":
+                    out.append(ch)
+                    in_str = False
+                else:
+                    out.append('\\"')
+            else:
+                out.append(ch)
+        else:
+            if ch == '"':
+                in_str = True
+                out.append(ch)
+            else:
+                out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def _parse_score_response(response: str) -> List[Dict]:
     """解析评分LLM响应。
 
@@ -175,14 +243,27 @@ def _parse_score_response(response: str) -> List[Dict]:
     try:
         parsed = json.loads(text)
     except json.JSONDecodeError:
-        for pattern in (r"\{.*\}", r"\[.*\]"):
-            match = re.search(pattern, text, re.DOTALL)
-            if match:
-                try:
-                    parsed = json.loads(match.group())
-                    break
-                except json.JSONDecodeError:
-                    continue
+        # 兜底：依次尝试 修复未转义引号 / 修复裸换行 / 两者组合
+        for fixed in (
+            _repair_json_quotes(text),
+            _repair_json_text(text),
+            _repair_json_text(_repair_json_quotes(text)),
+        ):
+            try:
+                parsed = json.loads(fixed)
+                break
+            except json.JSONDecodeError:
+                continue
+        if parsed is None:
+            # 兜底：正则提取 JSON 片段
+            for pattern in (r"\{.*\}", r"\[.*\]"):
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    try:
+                        parsed = json.loads(match.group())
+                        break
+                    except json.JSONDecodeError:
+                        continue
 
     if parsed is None:
         print(f"无法从响应中解析JSON: {response}")
@@ -366,6 +447,39 @@ def _merge_scores(entries: List[Dict], scores: List[Dict]) -> List[Dict]:
     # 构建link到score的映射
     score_map = {s.get("link"): s for s in scores if s.get("link")}
 
+    def _norm_bool(v, default=True) -> bool:
+        """把 LLM 返回的布尔/字符串布尔规范化为 bool"""
+        if v is None:
+            return default
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "yes", "是")
+        return default
+
+    def _norm_str_list(v, default=None) -> list:
+        """规范化字符串列表字段（entity_industry 等）"""
+        if v is None:
+            return list(default or [])
+        if isinstance(v, str):
+            return [v] if v.strip() else []
+        if isinstance(v, list):
+            return [str(x).strip() for x in v if str(x).strip()]
+        return list(default or [])
+
+    def _norm_enum(v, allowed: tuple, default: str) -> str:
+        """把 LLM 返回的枚举值规范化，非法值回退到 default"""
+        if v is None:
+            return default
+        s = str(v).strip()
+        if s in allowed:
+            return s
+        # 允许去掉前缀符号
+        for a in allowed:
+            if a in s:
+                return a
+        return default
+
     merged = []
     for entry in entries:
         link = entry.get("link")
@@ -385,6 +499,53 @@ def _merge_scores(entries: List[Dict], scores: List[Dict]) -> List[Dict]:
                 "tags": score_data.get("tags", entry.get("tags", [])),
                 "score": score_value,
                 "summary": score_data.get("summary", entry.get("summary", "")),
+                "reason": score_data.get("reason", entry.get("reason", "")),
+                "entity_relevant": _norm_bool(
+                    score_data.get("entity_relevant", entry.get("entity_relevant")),
+                    default=True,
+                ),
+                "entity_industry": _norm_str_list(
+                    score_data.get("entity_industry", entry.get("entity_industry")),
+                    default=[],
+                ),
+                "entity_maturity": _norm_enum(
+                    score_data.get("entity_maturity", entry.get("entity_maturity")),
+                    allowed=("概念阶段", "早期测试", "正式可用", "大规模普及"),
+                    default="概念阶段",
+                ),
+                "entity_effort": _norm_enum(
+                    score_data.get("entity_effort", entry.get("entity_effort")),
+                    allowed=("极低", "低", "中", "高"),
+                    default="中",
+                ),
+                "entity_advice": _norm_enum(
+                    score_data.get("entity_advice", entry.get("entity_advice")),
+                    allowed=("立即行动", "小成本试用", "观望", "暂不跟进"),
+                    default="观望",
+                ),
+                "entity_alternative": _norm_str_list(
+                    score_data.get(
+                        "entity_alternative", entry.get("entity_alternative")
+                    ),
+                    default=[],
+                ),
+                "entity_insight": score_data.get(
+                    "entity_insight", entry.get("entity_insight", "")
+                ),
+                "category": _norm_enum(
+                    score_data.get("category", entry.get("category", "")),
+                    allowed=(
+                        "视频生成",
+                        "图像生成",
+                        "智能体与自动化",
+                        "文本与内容",
+                        "大模型与API",
+                        "平台与商业模式",
+                        "政策与宏观",
+                        "其他",
+                    ),
+                    default="其他",
+                ),
             }
         )
 
@@ -632,3 +793,47 @@ def parse_immediate_push_with_metadata(
         }
 
     return llm_output, {"title": default_title, "profile": "hotspot"}
+
+
+async def generate_deduction(
+    entry: Dict, config: Dict
+) -> Tuple[Optional[Dict], Optional[str]]:
+    """对单条新闻做五步推演（信号/九域/变革链/象限/行动卡片）。
+
+    返回 (deduce_dict, error)；失败时返回 (None, error_message)。
+    """
+    prompt_path = config.get("prompts", {}).get("deduce", "prompts/deduce.md")
+    entry_slim = {
+        "link": entry.get("link", ""),
+        "title": entry.get("title", ""),
+        "source": entry.get("source", ""),
+        "score": entry.get("score", 0),
+        "entity_industry": entry.get("entity_industry", []),
+        "entity_maturity": entry.get("entity_maturity", ""),
+        "entity_effort": entry.get("entity_effort", ""),
+        "entity_advice": entry.get("entity_advice", ""),
+        "entity_alternative": entry.get("entity_alternative", []),
+        "entity_insight": entry.get("entity_insight", ""),
+        "summary": entry.get("summary", ""),
+        "content": entry.get("content", "")[:3000],
+    }
+    prompt = load_prompt(
+        prompt_path, entry_json=json.dumps(entry_slim, ensure_ascii=False, indent=2)
+    )
+
+    try:
+        response = await call_llm(
+            prompt, config, response_format={"type": "json_object"}
+        )
+        results = _parse_score_response(response)
+    except Exception as e:
+        msg = f"五步推演失败: {e}"
+        print(f"⚠️ {msg}")
+        return None, msg
+
+    if not results or not isinstance(results[0], dict):
+        return None, "五步推演返回为空"
+    deduce = results[0].get("deduce")
+    if not isinstance(deduce, dict):
+        return None, "五步推演缺少 deduce 字段"
+    return deduce, None
