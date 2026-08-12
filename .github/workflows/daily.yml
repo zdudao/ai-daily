@@ -35,12 +35,13 @@ jobs:
       - name: Ensure daily report HTML
         run: uv run python -m src.main daily --no-deduce
 
+      - name: Build Pages index (latest report + history nav)
+        run: uv run python scripts/build_index.py
+
       - name: Commit & push report
         run: |
-          # 最新日报同时发布为首页（GitHub Pages 直接展示）
-          cp "$(ls -t news-data/daily-*.html | head -1)" index.html
           git config user.name "ai-daily-bot"
           git config user.email "ai-daily-bot@users.noreply.github.com"
-          git add -f config.json news-data/daily-*.html news-data/score-log-*.md index.html
+          git add -f config.json news-data/daily-*.html news-data/score-log-*.md index.html scripts/build_index.py
           git diff --cached --quiet || git commit -m "chore: daily report $(date +%F)"
           git push
