@@ -1,10 +1,10 @@
-# 每日自动生成 AI 实体洞察日报并发布到仓库
-# cron: UTC 00:00 = 北京时间 08:00
+# 每日自动生成 AI 实体洞察日报并发布到仓库 + GitHub Pages
+# cron: UTC 05:00 = 北京时间 13:00
 name: daily-report
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 5 * * *'
   workflow_dispatch:
 
 permissions:
@@ -37,8 +37,10 @@ jobs:
 
       - name: Commit & push report
         run: |
+          # 最新日报同时发布为首页（GitHub Pages 直接展示）
+          cp "$(ls -t news-data/daily-*.html | head -1)" index.html
           git config user.name "ai-daily-bot"
           git config user.email "ai-daily-bot@users.noreply.github.com"
-          git add -f config.json news-data/daily-*.html news-data/score-log-*.md
+          git add -f config.json news-data/daily-*.html news-data/score-log-*.md index.html
           git diff --cached --quiet || git commit -m "chore: daily report $(date +%F)"
           git push
