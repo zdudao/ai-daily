@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.html_render import adv_nav_html  # noqa: E402
+from src.html_render import _ADVICE_EMOJI, adv_nav_html  # noqa: E402
 
 INDEX = "index.html"
 MAX_VISIBLE = 6  # 默认直接显示的最近日报条数，其余折叠
@@ -104,31 +104,61 @@ ADV_STYLE = """
 ADV_SCRIPT = """
 <script>
 (function(){
-  var advChips = document.querySelectorAll(".adv-chip");
-  function setAdvActive(hash){
-    advChips.forEach(function(c){
-      var h = c.getAttribute("href");
-      c.classList.toggle("active", hash.indexOf(h) === 0);
+  var chips = document.querySelectorAll(".adv-chip");
+  var cards = document.querySelectorAll(".card[data-adv]");
+  var groups = document.querySelectorAll(".cat-group");
+  function apply(cls){
+    cards.forEach(function(c){ c.style.display = (cls === "all" || c.getAttribute("data-adv") === cls) ? "" : "none"; });
+    groups.forEach(function(s){
+      var any = false;
+      s.querySelectorAll(".card").forEach(function(c){ if (c.style.display !== "none") any = true; });
+      s.style.display = any ? "" : "none";
     });
   }
-  advChips.forEach(function(c){ c.addEventListener("click", function(){ setAdvActive(c.getAttribute("href")); }); });
-  window.addEventListener("hashchange", function(){ setAdvActive(location.hash); });
-  setAdvActive(location.hash);
+  chips.forEach(function(c){
+    c.addEventListener("click", function(){
+      chips.forEach(function(x){ x.classList.toggle("active", x === c); });
+      apply(c.getAttribute("data-cls"));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+  apply("all");
+  chips.forEach(function(c){ c.classList.toggle("active", c.getAttribute("data-cls") === "all"); });
 })();
 </script>
 """
 
 
-def inject_adv(html: str) -> str:
-    """旧版日报补注入"行动分级"导航：给卡片加锚点 id，侧栏加分级导航。幂等。"""
-    if 'class="adv-nav"' in html:
-        return html
+ADV_BEGIN = "<!--ADV_NAV-->"
+ADV_END = "<!--/ADV_NAV-->"
 
+
+def inject_adv(html: str) -> str:
+    """给日报补注入/重建"行动分级"导航（过滤 + 分级图标）。
+
+    - 给每张卡片加锚点 id + data-adv（用于点击过滤）
+    - 评分数字替换为行动分级图标
+    - 侧栏插入行动分级导航（含"全部新闻"），脚本放 body 末尾
+    - 幂等/可升级：先清理旧注入（标记块/旧样式/旧脚本/卡片旧属性）再重建
+    """
+    # --- 1) 清理旧注入，保证可重复运行且能升级旧版本 ---
+    html = re.sub(re.escape(ADV_BEGIN) + r".*?" + re.escape(ADV_END), "", html, flags=re.S)
+    html = re.sub(r"<style>\s*\.adv-nav\s*\{.*?</style>", "", html, flags=re.S)
+    # 只删除"行动分级"脚本块（特征：包含 .adv-chip 选择器），不影响页面原有脚本
+    html = re.sub(
+        r"<script>(?:(?!</script>).)*\.adv-chip(?:(?!</script>).)*</script>",
+        "",
+        html,
+        flags=re.S,
+    )
+    # 还原所有卡片为干净开标签（去掉旧 id/data-adv 属性）
+    html = re.sub(r'<div class="card"[^>]*>', '<div class="card">', html)
+
+    # --- 2) 卡片加锚点 id + data-adv ---
     starts = [m.end() for m in re.finditer(r'<div class="card">', html)]
     if not starts:
         return html
 
-    # 正序编号（页面第一张卡 = -1），与 html_render.py 生成的规则一致
     ids: dict = {}
     counts: dict = {}
     for i, s in enumerate(starts):
@@ -138,13 +168,24 @@ def inject_adv(html: str) -> str:
             continue
         cls = m.group(1)
         counts[cls] = counts.get(cls, 0) + 1
-        ids[i] = f'id="adv-{cls}-{counts[cls]}"'
+        ids[i] = f'id="adv-{cls}-{counts[cls]}" data-adv="{cls}"'
     # 从后往前应用替换，避免索引偏移
     for i in range(len(starts) - 1, -1, -1):
         if i not in ids:
             continue
         html = html[: starts[i] - 18] + f'<div class="card" {ids[i]}>' + html[starts[i]:]
 
+    # --- 3) 评分数字 → 行动分级图标（评分保留在数据层，页面不显示分数） ---
+    html = re.sub(
+        r'<span class="score (act|try|watch|skip)">\d+</span>',
+        lambda m: (
+            f'<span class="score {m.group(1)}" title="行动分级">'
+            f"{_ADVICE_EMOJI[m.group(1)]}</span>"
+        ),
+        html,
+    )
+
+    # --- 4) 插入导航（含样式）与脚本 ---
     advice_cnt = {
         name: counts[cls]
         for cls, name in ADV_CLS_TO_NAME.items()
@@ -154,11 +195,11 @@ def inject_adv(html: str) -> str:
     if not nav:
         return html
 
-    # 导航（含样式）插到分类导航后；脚本插到 </body> 前保证 DOM 就绪
+    block = ADV_BEGIN + ADV_STYLE + nav + ADV_END
     idx = html.find("</nav>")
     if idx == -1:
         return html
-    html = html[: idx + 6] + ADV_STYLE + nav + html[idx + 6:]
+    html = html[: idx + 6] + block + html[idx + 6:]
     bidx = html.rfind("</body>")
     if bidx != -1:
         html = html[:bidx] + ADV_SCRIPT + html[bidx:]

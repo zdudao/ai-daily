@@ -621,6 +621,7 @@ _CATEGORY_META = {
     "其他": ("📦 其他", ""),
 }
 _ADVICE_CLS = {"立即行动": "act", "小成本试用": "try", "观望": "watch", "暂不跟进": "skip"}
+_ADVICE_EMOJI = {"act": "🔥", "try": "✅", "watch": "👀", "skip": "⛔"}
 
 
 def _deduce_card_html(d: Dict) -> str:
@@ -830,25 +831,32 @@ def _deduce_html(e: Dict) -> str:
 
 
 def adv_nav_html(advice_cnt: Dict[str, int]) -> str:
-    """生成侧栏"行动分级"导航（按分级链接到该分级第一张卡片锚点）。
+    """生成侧栏"行动分级"导航（点击后页面只显示该分级新闻）。
 
     advice_cnt: {分级中文名: 条数}，如 {"立即行动": 3, ...}
-    输出纯导航结构；样式在主 CSS，脚本在页面脚本中。
+    输出纯导航结构；样式在主 CSS，过滤脚本在页面脚本中。
     """
     chips = []
+    total = 0
     for advice in _ADVICE_ORDER:
         n = advice_cnt.get(advice, 0)
         if not n:
             continue
+        total += n
         title, _, cls, _ = _ADVICE_META[advice]
         chips.append(
-            f'<a class="adv-chip {cls}" href="#adv-{cls}-1">{title}'
+            f'<a class="adv-chip {cls}" href="#adv-{cls}-1" data-cls="{cls}">{title}'
             f'<span class="adv-n">{n}</span></a>'
         )
     if not chips:
         return ""
+    all_chip = (
+        f'<a class="adv-chip adv-all" href="#adv-all" data-cls="all">📋 全部新闻'
+        f'<span class="adv-n">{total}</span></a>'
+    )
     return (
         '<nav class="adv-nav"><div class="adv-label">⚡ 行动分级</div>'
+        + all_chip
         + "".join(chips)
         + "</nav>"
     )
@@ -905,9 +913,9 @@ def _entity_report_cards(entries: List[Dict], card_cls: str, adv_counter: Dict[s
         adv_no = adv_counter[advice_cls]
 
         cards.append(
-            f'<div class="card" id="adv-{advice_cls}-{adv_no}">'
+            f'<div class="card" id="adv-{advice_cls}-{adv_no}" data-adv="{advice_cls}">'
             f'<div class="card-top">'
-            f'<span class="score {advice_cls}">{score}</span>'
+            f'<span class="score {advice_cls}" title="行动分级">{_ADVICE_EMOJI[advice_cls]}</span>'
             f"<h3>{title_html}</h3>"
             f"</div>"
             f'<div class="meta-line">'
@@ -1075,18 +1083,26 @@ function copyWx(el){{
   setActive(location.hash);
 }})();
 (function(){{
-  var advChips = document.querySelectorAll(".adv-chip");
-  function setAdvActive(hash){{
-    advChips.forEach(function(c){{
-      var h = c.getAttribute("href");
-      c.classList.toggle("active", hash.indexOf(h) === 0);
+  var chips = document.querySelectorAll(".adv-chip");
+  var cards = document.querySelectorAll(".card[data-adv]");
+  var groups = document.querySelectorAll(".cat-group");
+  function apply(cls){{
+    cards.forEach(function(c){{ c.style.display = (cls === "all" || c.getAttribute("data-adv") === cls) ? "" : "none"; }});
+    groups.forEach(function(s){{
+      var any = false;
+      s.querySelectorAll(".card").forEach(function(c){{ if (c.style.display !== "none") any = true; }});
+      s.style.display = any ? "" : "none";
     }});
   }}
-  advChips.forEach(function(c){{
-    c.addEventListener("click", function(){{ setAdvActive(c.getAttribute("href")); }});
+  chips.forEach(function(c){{
+    c.addEventListener("click", function(){{
+      chips.forEach(function(x){{ x.classList.toggle("active", x === c); }});
+      apply(c.getAttribute("data-cls"));
+      window.scrollTo({{ top: 0, behavior: "smooth" }});
+    }});
   }});
-  window.addEventListener("hashchange", function(){{ setAdvActive(location.hash); }});
-  setAdvActive(location.hash);
+  apply("all");
+  chips.forEach(function(c){{ c.classList.toggle("active", c.getAttribute("data-cls") === "all"); }});
 }})();
 </script>
 </body>
