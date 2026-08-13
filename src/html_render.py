@@ -263,6 +263,7 @@ _ENTITY_CSS = """
     border-radius: 16px;
     padding: 24px;
     margin-top: 14px;
+    scroll-margin-top: 18px;
     transition: box-shadow .18s, border-color .18s;
   }
   .card:hover { box-shadow: 0 10px 28px rgba(0, 0, 0, .45); border-color: rgba(79,109,255,.45); }
@@ -488,6 +489,46 @@ _ENTITY_CSS = """
     text-align: center;
   }
   .cat-chip.active .cat-n { color: #c4ed1a; background: rgba(196,237,26,.1); }
+
+  /* 行动分级导航（左侧竖向，分级色左竖线） */
+  .adv-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .adv-label { color: #666666; font-size: 11px; letter-spacing: 1.5px; padding: 0 12px 4px; }
+  .adv-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    color: #666666;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all .15s;
+  }
+  .adv-chip:hover { background: rgba(255,255,255,.04); color: #cccccc; }
+  .adv-chip.act { border-left-color: rgba(196,237,26,.6); }
+  .adv-chip.try { border-left-color: rgba(184,122,255,.6); }
+  .adv-chip.watch { border-left-color: rgba(79,109,255,.7); }
+  .adv-chip.skip { border-left-color: rgba(119,119,119,.6); }
+  .adv-chip.active { background: rgba(255,255,255,.06); color: #ffffff; font-weight: 700; }
+  .adv-chip .adv-n {
+    color: #888888;
+    background: rgba(255,255,255,.08);
+    border-radius: 20px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 22px;
+    text-align: center;
+  }
+  .adv-chip.act .adv-n { color: #c4ed1a; background: rgba(196,237,26,.1); }
+  .adv-chip.try .adv-n { color: #d8c4f5; background: rgba(184,122,255,.12); }
+  .adv-chip.watch .adv-n { color: #8fa6ff; background: rgba(79,109,255,.12); }
+  .adv-chip.skip .adv-n { color: #9a9a9a; background: rgba(119,119,119,.1); }
+  .adv-chip.active .adv-n { background: rgba(255,255,255,.16); }
+
   .cat-group { margin-bottom: 6px; scroll-margin-top: 16px; }
   .cat-title {
     font-family: var(--serif);
@@ -788,7 +829,32 @@ def _deduce_html(e: Dict) -> str:
     return _deduce_legacy_html(d)
 
 
-def _entity_report_cards(entries: List[Dict], card_cls: str) -> str:
+def adv_nav_html(advice_cnt: Dict[str, int]) -> str:
+    """生成侧栏"行动分级"导航（按分级链接到该分级第一张卡片锚点）。
+
+    advice_cnt: {分级中文名: 条数}，如 {"立即行动": 3, ...}
+    输出纯导航结构；样式在主 CSS，脚本在页面脚本中。
+    """
+    chips = []
+    for advice in _ADVICE_ORDER:
+        n = advice_cnt.get(advice, 0)
+        if not n:
+            continue
+        title, _, cls, _ = _ADVICE_META[advice]
+        chips.append(
+            f'<a class="adv-chip {cls}" href="#adv-{cls}-1">{title}'
+            f'<span class="adv-n">{n}</span></a>'
+        )
+    if not chips:
+        return ""
+    return (
+        '<nav class="adv-nav"><div class="adv-label">⚡ 行动分级</div>'
+        + "".join(chips)
+        + "</nav>"
+    )
+
+
+def _entity_report_cards(entries: List[Dict], card_cls: str, adv_counter: Dict[str, int]) -> str:
     """渲染一组条目为卡片 HTML（洞察高亮，摘要弱化，五步推演可折叠）"""
     if not entries:
         return '<div class="empty">（无）</div>'
@@ -835,9 +901,11 @@ def _entity_report_cards(entries: List[Dict], card_cls: str) -> str:
             badges.append(f'<span class="badge effort">门槛 {html.escape(effort)}</span>')
         badge_html = "".join(badges)
         advice_cls = _ADVICE_CLS.get(advice, "watch")
+        adv_counter[advice_cls] = adv_counter.get(advice_cls, 0) + 1
+        adv_no = adv_counter[advice_cls]
 
         cards.append(
-            f'<div class="card">'
+            f'<div class="card" id="adv-{advice_cls}-{adv_no}">'
             f'<div class="card-top">'
             f'<span class="score {advice_cls}">{score}</span>'
             f"<h3>{title_html}</h3>"
@@ -895,7 +963,19 @@ def render_entity_report(
         )
     nav_html = f'<nav class="cat-nav">{"".join(nav_chips)}</nav>' if nav_chips else ""
 
-    # 分类分组区块
+    # 行动分级统计（附在 hero + 侧栏导航）
+    advice_cnt = {}
+    for e in qualified:
+        advice_cnt[e.get("entity_advice", "观望")] = advice_cnt.get(e.get("entity_advice", "观望"), 0) + 1
+    advice_sum = " · ".join(
+        f"{_ADVICE_META.get(a, (a,))[0]} {advice_cnt[a]}" for a in _ADVICE_ORDER if advice_cnt.get(a)
+    )
+    advice_sum_html = (
+        f'<div class="advice-line">今日行动分级：{advice_sum}</div>' if advice_sum else ""
+    )
+
+    # 分类分组区块（卡片按行动分级顺序编号，用于侧栏分级锚点）
+    adv_counter: Dict[str, int] = {"act": 0, "try": 0, "watch": 0, "skip": 0}
     sections = []
     for i, cat in enumerate(_CATEGORY_ORDER):
         group = cat_groups[cat]
@@ -909,24 +989,13 @@ def render_entity_report(
             f'<span class="cat-desc">{desc}</span>'
             f"</h2>"
             f'<div class="cat-cards">'
-            f"{_entity_report_cards(group, 'watch')}"
+            f"{_entity_report_cards(group, 'watch', adv_counter)}"
             f"</div>"
             f"</section>"
         )
     if not sections:
         sections.append('<div class="empty">当日无实体相关精选新闻</div>')
     body = "\n".join(sections)
-
-    # 行动分级统计（附在 hero）
-    advice_cnt = {}
-    for e in qualified:
-        advice_cnt[e.get("entity_advice", "观望")] = advice_cnt.get(e.get("entity_advice", "观望"), 0) + 1
-    advice_sum = " · ".join(
-        f"{_ADVICE_META.get(a, (a,))[0]} {advice_cnt[a]}" for a in _ADVICE_ORDER if advice_cnt.get(a)
-    )
-    advice_sum_html = (
-        f'<div class="advice-line">今日行动分级：{advice_sum}</div>' if advice_sum else ""
-    )
 
     stats = (
         f'<div class="stats">'
@@ -954,6 +1023,7 @@ def render_entity_report(
   <aside class="sidebar">
     <div class="brand">老许聊实体<span class="brand-sub">AI × 实体洞察日报</span></div>
     {nav_html}
+    {adv_nav_html(advice_cnt)}
   </aside>
   <main class="main">
     <div class="hero">
@@ -1003,6 +1073,20 @@ function copyWx(el){{
   }});
   window.addEventListener("hashchange", function(){{ setActive(location.hash); }});
   setActive(location.hash);
+}})();
+(function(){{
+  var advChips = document.querySelectorAll(".adv-chip");
+  function setAdvActive(hash){{
+    advChips.forEach(function(c){{
+      var h = c.getAttribute("href");
+      c.classList.toggle("active", hash.indexOf(h) === 0);
+    }});
+  }}
+  advChips.forEach(function(c){{
+    c.addEventListener("click", function(){{ setAdvActive(c.getAttribute("href")); }});
+  }});
+  window.addEventListener("hashchange", function(){{ setAdvActive(location.hash); }});
+  setAdvActive(location.hash);
 }})();
 </script>
 </body>

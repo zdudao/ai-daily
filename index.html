@@ -395,7 +395,38 @@
 <div class="page">
   <aside class="sidebar">
     <div class="brand">老许聊实体<span class="brand-sub">AI × 实体洞察日报</span></div>
-    <nav class="cat-nav"><a class="cat-chip" href="#cat-0">🎬 视频生成<span class="cat-n">2</span></a><a class="cat-chip" href="#cat-2">🤖 智能体与自动化<span class="cat-n">6</span></a><a class="cat-chip" href="#cat-4">🧠 大模型与API<span class="cat-n">5</span></a><a class="cat-chip" href="#cat-5">🏪 平台与商业模式<span class="cat-n">3</span></a><a class="cat-chip" href="#cat-6">🏛️ 政策与宏观<span class="cat-n">1</span></a></nav><!--ARC_NAV-->
+    <nav class="cat-nav"><a class="cat-chip" href="#cat-0">🎬 视频生成<span class="cat-n">2</span></a><a class="cat-chip" href="#cat-2">🤖 智能体与自动化<span class="cat-n">6</span></a><a class="cat-chip" href="#cat-4">🧠 大模型与API<span class="cat-n">5</span></a><a class="cat-chip" href="#cat-5">🏪 平台与商业模式<span class="cat-n">3</span></a><a class="cat-chip" href="#cat-6">🏛️ 政策与宏观<span class="cat-n">1</span></a></nav>
+<style>
+.adv-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #2a2a2a; }
+.adv-label { color: #666666; font-size: 11px; letter-spacing: 1.5px; padding: 0 12px 4px; }
+.adv-chip {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-radius: 8px;
+  background: transparent; border: 1px solid transparent; border-left: 3px solid transparent;
+  color: #666666; font-size: 13px; text-decoration: none; transition: all .15s;
+}
+.adv-chip:hover { background: rgba(255,255,255,.04); color: #cccccc; }
+.adv-chip.act { border-left-color: rgba(196,237,26,.6); }
+.adv-chip.try { border-left-color: rgba(184,122,255,.6); }
+.adv-chip.watch { border-left-color: rgba(79,109,255,.7); }
+.adv-chip.skip { border-left-color: rgba(119,119,119,.6); }
+.adv-chip.active { background: rgba(255,255,255,.06); color: #ffffff; font-weight: 700; }
+.adv-chip .adv-n {
+  color: #888888; background: rgba(255,255,255,.08); border-radius: 20px;
+  padding: 0 8px; font-size: 12px; font-weight: 600; min-width: 22px; text-align: center;
+}
+.adv-chip.act .adv-n { color: #c4ed1a; background: rgba(196,237,26,.1); }
+.adv-chip.try .adv-n { color: #d8c4f5; background: rgba(184,122,255,.12); }
+.adv-chip.watch .adv-n { color: #8fa6ff; background: rgba(79,109,255,.12); }
+.adv-chip.skip .adv-n { color: #9a9a9a; background: rgba(119,119,119,.1); }
+.adv-chip.active .adv-n { background: rgba(255,255,255,.16); }
+.card { scroll-margin-top: 18px; }
+@media (max-width:860px){
+  .adv-nav { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .adv-label { width: 100%; }
+}
+</style>
+<nav class="adv-nav"><div class="adv-label">⚡ 行动分级</div><a class="adv-chip act" href="#adv-act-1">🔥 立即行动<span class="adv-n">3</span></a><a class="adv-chip try" href="#adv-try-1">✅ 小成本试用<span class="adv-n">5</span></a><a class="adv-chip watch" href="#adv-watch-1">👀 观望<span class="adv-n">7</span></a><a class="adv-chip skip" href="#adv-skip-1">⛔ 暂不跟进<span class="adv-n">2</span></a></nav><!--ARC_NAV-->
 <style>
 .arc-nav{margin:18px 4px 0;padding:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px}
 .arc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
@@ -433,7 +464,7 @@
       <div class="stats"><div class="stat"><b>17</b>实体精选</div><div class="stat"><b>273</b>与实体无关</div></div>
     </div>
     <div class="content">
-<section id="cat-0" class="cat-group"><h2 class="cat-title">🎬 视频生成<span class="cat-count">2 条</span><span class="cat-desc">AI视频 / 剪辑 / 数字人 / 口播</span></h2><div class="cat-cards"><div class="card"><div class="card-top"><span class="score try">70</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&amp;mid=2247521239&amp;idx=1&amp;sn=3d1c9e6773e98f7468cf08edd574c940">把 AI 视频的钱花在刀刃上，不是每一刀上</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">餐饮</span><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice try">小成本试用</span><span style="margin-left:auto">字节跳动技术团队</span></div><div class="insight"><span class="label">💡 实体洞察</span>字节的火山引擎推出AI视频分层生成方案：先用低清快速试错，确定方向后再用4K高清出片。实体老板做抖音、朋友圈广告可以借鉴这个思路，先用免费或便宜的方式批量试素材，别一上来就烧钱做高清，提高投入产出比。</div>
+<section id="cat-0" class="cat-group"><h2 class="cat-title">🎬 视频生成<span class="cat-count">2 条</span><span class="cat-desc">AI视频 / 剪辑 / 数字人 / 口播</span></h2><div class="cat-cards"><div class="card" id="adv-try-1"><div class="card-top"><span class="score try">70</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzI1MzYzMjE0MQ==&amp;mid=2247521239&amp;idx=1&amp;sn=3d1c9e6773e98f7468cf08edd574c940">把 AI 视频的钱花在刀刃上，不是每一刀上</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">餐饮</span><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice try">小成本试用</span><span style="margin-left:auto">字节跳动技术团队</span></div><div class="insight"><span class="label">💡 实体洞察</span>字节的火山引擎推出AI视频分层生成方案：先用低清快速试错，确定方向后再用4K高清出片。实体老板做抖音、朋友圈广告可以借鉴这个思路，先用免费或便宜的方式批量试素材，别一上来就烧钱做高清，提高投入产出比。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -453,7 +484,7 @@
 </div>
 </details>
 <div class="summary">火山引擎提出AI视频制作应先轻量试错再高清定稿的分层方案。</div></div>
-<div class="card"><div class="card-top"><span class="score try">68</span><h3><a href="https://x.com/xiaohu/status/2087537080390107136">Higgsfield 又制作了一部完整的超长AI电影
+<div class="card" id="adv-try-2"><div class="card-top"><span class="score try">68</span><h3><a href="https://x.com/xiaohu/status/2087537080390107136">Higgsfield 又制作了一部完整的超长AI电影
 
 这可能是 AI 电影真正开始进入长片时代的一个节点
 
@@ -481,7 +512,7 @@ Higgsfield 和 Cully ...</a></h3></div><div class="meta-line"><span class="indus
 </div>
 </details>
 <div class="summary">Higgsfield用AI制作110分钟长片，成本200万美元，素材全部开源。</div></div></div></section>
-<section id="cat-2" class="cat-group"><h2 class="cat-title">🤖 智能体与自动化<span class="cat-count">6 条</span><span class="cat-desc">AI同事 / 数字员工 / Agent / 自动化</span></h2><div class="cat-cards"><div class="card"><div class="card-top"><span class="score act">90</span><h3><a href="https://tech.meituan.com/2026/07/28/CatPaw-LongCat.html">美团正式发布 CatPaw：全场景 AI Agent，从个人提效到企业智能化</a></h3></div><div class="meta-line"><span class="industry">餐饮</span><span class="industry">零售</span><span class="industry">生活服务</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice act">立即行动</span><span style="margin-left:auto">美团技术团队</span></div><div class="insight"><span class="label">💡 实体洞察</span>美团正式上线CatPaw，这是专门给本地生活商家用的AI助手，能帮你写商品文案、做营销物料、分析经营数据，甚至当数字员工在微信里干活。现在美团内部9万员工都在用，商家可以申请体验。老板们值得马上研究，尤其做餐饮、零售的，可能是你用AI提效的最直接入口。</div>
+<section id="cat-2" class="cat-group"><h2 class="cat-title">🤖 智能体与自动化<span class="cat-count">6 条</span><span class="cat-desc">AI同事 / 数字员工 / Agent / 自动化</span></h2><div class="cat-cards"><div class="card" id="adv-act-1"><div class="card-top"><span class="score act">90</span><h3><a href="https://tech.meituan.com/2026/07/28/CatPaw-LongCat.html">美团正式发布 CatPaw：全场景 AI Agent，从个人提效到企业智能化</a></h3></div><div class="meta-line"><span class="industry">餐饮</span><span class="industry">零售</span><span class="industry">生活服务</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice act">立即行动</span><span style="margin-left:auto">美团技术团队</span></div><div class="insight"><span class="label">💡 实体洞察</span>美团正式上线CatPaw，这是专门给本地生活商家用的AI助手，能帮你写商品文案、做营销物料、分析经营数据，甚至当数字员工在微信里干活。现在美团内部9万员工都在用，商家可以申请体验。老板们值得马上研究，尤其做餐饮、零售的，可能是你用AI提效的最直接入口。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -501,7 +532,7 @@ Higgsfield 和 Cully ...</a></h3></div><div class="meta-line"><span class="indus
 </div>
 </details>
 <div class="summary">美团发布CatPaw全场景AI Agent平台，面向企业和商家提供数字员工等服务。</div></div>
-<div class="card"><div class="card-top"><span class="score act">72</span><h3><a href="https://x.com/Khazix0918/status/2087368423089254771">我们经常会感觉，AI 已经这么火了，可是在我日常中，跟很多别的行业的朋友们聊，大家总是会天然的觉得，用 AI，是一件很难的事情。
+<div class="card" id="adv-act-2"><div class="card-top"><span class="score act">72</span><h3><a href="https://x.com/Khazix0918/status/2087368423089254771">我们经常会感觉，AI 已经这么火了，可是在我日常中，跟很多别的行业的朋友们聊，大家总是会天然的觉得，用 AI，是一件很难的事情。
 有很多人，不敢开始。
 
 包括其实我日常被问的最多的问题，也是类似的：
@@ -525,7 +556,7 @@ Higgsfield 和 Cully ...</a></h3></div><div class="meta-line"><span class="indus
 </div>
 </details>
 <div class="summary">卡兹克发布AI入门教程，教普通人用AI处理日常事务。</div></div>
-<div class="card"><div class="card-top"><span class="score watch">65</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzA4NjUwNTI0OA==&amp;mid=2247499128&amp;idx=1&amp;sn=8411915cd03d4421291506c4137840d7">一个“催发货”AI要跑通260步，和阿里瓴羊朋新宇聊聊中国式FDE</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">批发供应链</span><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 高</span><span class="badge advice watch">观望</span><span style="margin-left:auto">硅谷101</span></div><div class="insight"><span class="label">💡 实体洞察</span>阿里瓴羊做企业级AI Agent，比如一个催发货流程要跑260步，AI能自动完成，还能学习调价逻辑。对电商、批发老板来说，这是未来的降本方向，但需要企业级部署和费用，现在普通门店用不上，先关注。</div>
+<div class="card" id="adv-watch-1"><div class="card-top"><span class="score watch">65</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzA4NjUwNTI0OA==&amp;mid=2247499128&amp;idx=1&amp;sn=8411915cd03d4421291506c4137840d7">一个“催发货”AI要跑通260步，和阿里瓴羊朋新宇聊聊中国式FDE</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">批发供应链</span><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 高</span><span class="badge advice watch">观望</span><span style="margin-left:auto">硅谷101</span></div><div class="insight"><span class="label">💡 实体洞察</span>阿里瓴羊做企业级AI Agent，比如一个催发货流程要跑260步，AI能自动完成，还能学习调价逻辑。对电商、批发老板来说，这是未来的降本方向，但需要企业级部署和费用，现在普通门店用不上，先关注。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -545,7 +576,7 @@ Higgsfield 和 Cully ...</a></h3></div><div class="meta-line"><span class="indus
 </div>
 </details>
 <div class="summary">阿里瓴羊CEO分享中国式FDE，用Agent解决企业真实业务流程。</div></div>
-<div class="card"><div class="card-top"><span class="score try">65</span><h3><a href="https://x.com/xiaohu/status/2087496240078713274">xAI 发布 Grok Bot
+<div class="card" id="adv-try-3"><div class="card-top"><span class="score try">65</span><h3><a href="https://x.com/xiaohu/status/2087496240078713274">xAI 发布 Grok Bot
 
 一批有自己电脑的 AI 同事，用你的账号替你干活
 
@@ -571,7 +602,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">xAI发布Grok Bot，可常驻云端代替用户操作网页完成工作。</div></div>
-<div class="card"><div class="card-top"><span class="score try">63</span><h3><a href="https://x.com/op7418/status/2087494509454389651">又有羊毛薅了，Manus 从 Meta 剥离以后开启了限免。
+<div class="card" id="adv-try-4"><div class="card-top"><span class="score try">63</span><h3><a href="https://x.com/op7418/status/2087494509454389651">又有羊毛薅了，Manus 从 Meta 剥离以后开启了限免。
 
 如果你之前自己买过 Manus 会员，或者是通过 Lenny&#x27;s Newsletter 领过会员的话，最近可以用一用。
 
@@ -595,7 +626,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">Manus从Meta剥离后开启限免，可免费使用1.6和Lite模型。</div></div>
-<div class="card"><div class="card-top"><span class="score try">60</span><h3><a href="https://x.com/PMbackttfuture/status/2087336464388374925">WorkBuddy+Hy3 0积分居然能做到
+<div class="card" id="adv-try-5"><div class="card-top"><span class="score try">60</span><h3><a href="https://x.com/PMbackttfuture/status/2087336464388374925">WorkBuddy+Hy3 0积分居然能做到
 全量社群聊天记录整理后放到飞书云文档
 
 黄叔不是做了个Agent社群嘛
@@ -622,7 +653,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">用户用WorkBuddy+Hy3自动整理10天社群聊天记录至飞书文档。</div></div></div></section>
-<section id="cat-4" class="cat-group"><h2 class="cat-title">🧠 大模型与API<span class="cat-count">5 条</span><span class="cat-desc">模型发布 / 开源 / API降价 / 云能力</span></h2><div class="cat-cards"><div class="card"><div class="card-top"><span class="score act">75</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&amp;mid=2647685084&amp;idx=1&amp;sn=0899296dbc140eeb745f7a99f9d5ed9c">从0开始，12步学会用好AI。</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="alternative">国产替代: 豆包</span><span class="alternative">国产替代: Kimi</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 极低</span><span class="badge advice act">立即行动</span><span style="margin-left:auto">数字生命卡兹克</span></div><div class="insight"><span class="label">💡 实体洞察</span>文章给了12个步骤教普通人把不爱干的活扔给AI：用语音输入法说清背景痛点，让AI提问确认，再把文件丢给它干完。海外ChatGPT要付费，国内用豆包、Kimi完全免费，效果也一样。建议老板今天就用起来，从写周报、做ppt开始。</div>
+<section id="cat-4" class="cat-group"><h2 class="cat-title">🧠 大模型与API<span class="cat-count">5 条</span><span class="cat-desc">模型发布 / 开源 / API降价 / 云能力</span></h2><div class="cat-cards"><div class="card" id="adv-act-3"><div class="card-top"><span class="score act">75</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzIyMzA5NjEyMA==&amp;mid=2647685084&amp;idx=1&amp;sn=0899296dbc140eeb745f7a99f9d5ed9c">从0开始，12步学会用好AI。</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="alternative">国产替代: 豆包</span><span class="alternative">国产替代: Kimi</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 极低</span><span class="badge advice act">立即行动</span><span style="margin-left:auto">数字生命卡兹克</span></div><div class="insight"><span class="label">💡 实体洞察</span>文章给了12个步骤教普通人把不爱干的活扔给AI：用语音输入法说清背景痛点，让AI提问确认，再把文件丢给它干完。海外ChatGPT要付费，国内用豆包、Kimi完全免费，效果也一样。建议老板今天就用起来，从写周报、做ppt开始。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -642,7 +673,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">提供12步法，教普通人用AI工具完成日常办公任务。</div></div>
-<div class="card"><div class="card-top"><span class="score watch">72</span><h3><a href="https://x.com/op7418/status/2087583794819956750">滑动变祖器拉满！</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice watch">观望</span><span style="margin-left:auto">歸藏(guizang.ai)(@op7418)</span></div><div class="insight"><span class="label">💡 实体洞察</span>DeepSeek升级到V4 Pro，意味着国内免费或低价的AI能力更强了。实体老板不用关心跑分，只需要知道：以后用AI写文案、做图、处理表格的质量会更高，而且很多基于DeepSeek的应用会免费跟上。现在不用急着做什么，继续用现有免费工具，过阵子会自然变好。</div>
+<div class="card" id="adv-watch-2"><div class="card-top"><span class="score watch">72</span><h3><a href="https://x.com/op7418/status/2087583794819956750">滑动变祖器拉满！</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice watch">观望</span><span style="margin-left:auto">歸藏(guizang.ai)(@op7418)</span></div><div class="insight"><span class="label">💡 实体洞察</span>DeepSeek升级到V4 Pro，意味着国内免费或低价的AI能力更强了。实体老板不用关心跑分，只需要知道：以后用AI写文案、做图、处理表格的质量会更高，而且很多基于DeepSeek的应用会免费跟上。现在不用急着做什么，继续用现有免费工具，过阵子会自然变好。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -662,7 +693,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">DeepSeek发布V4 Pro正式版，测试成绩表现优异。</div></div>
-<div class="card"><div class="card-top"><span class="score watch">72</span><h3><a href="https://x.com/op7418/status/2087580222992592946">DeepSeek V4 Pro 正式版 0813 发布了！
+<div class="card" id="adv-watch-3"><div class="card-top"><span class="score watch">72</span><h3><a href="https://x.com/op7418/status/2087580222992592946">DeepSeek V4 Pro 正式版 0813 发布了！
 
 从流传的测试成绩来看依然相当爆炸</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice watch">观望</span><span style="margin-left:auto">歸藏(guizang.ai)(@op7418)</span></div><div class="insight"><span class="label">💡 实体洞察</span>DeepSeek V4 Pro发布，意味着国产AI能力又上一个台阶。对实体老板来说，最直接的好处是未来用AI处理文字、图片、数据会更聪明，而且很多工具会免费接入。建议保持关注，等应用更新后再上手，不用着急。</div>
 <details class="deduce">
@@ -684,7 +715,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">DeepSeek V4 Pro正式版发布。</div></div>
-<div class="card"><div class="card-top"><span class="score skip">62</span><h3><a href="https://x.com/Khazix0918/status/2087601177496277115">Grok 4.6这次真的很不错，直接怒氪300刀的会员了，现在买300刀的SuperGrok Heavy，还能白嫖Cursor Ultra，这就很香。。。。</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="alternative">国产替代: 豆包</span><span class="alternative">国产替代: 通义千问</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice skip">暂不跟进</span><span style="margin-left:auto">数字生命卡兹克(@Khazix0918)</span></div><div class="insight"><span class="label">💡 实体洞察</span>这是一条模型发布消息，但Grok用不了（国内访问困难），而且国内豆包、通义千问完全免费且好用。实体店老板不要为了&#x27;AI新模型&#x27;盲目付费，日常文案、作图用国产工具就够了，这个会员优惠跟你没关系。</div>
+<div class="card" id="adv-skip-1"><div class="card-top"><span class="score skip">62</span><h3><a href="https://x.com/Khazix0918/status/2087601177496277115">Grok 4.6这次真的很不错，直接怒氪300刀的会员了，现在买300刀的SuperGrok Heavy，还能白嫖Cursor Ultra，这就很香。。。。</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="alternative">国产替代: 豆包</span><span class="alternative">国产替代: 通义千问</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice skip">暂不跟进</span><span style="margin-left:auto">数字生命卡兹克(@Khazix0918)</span></div><div class="insight"><span class="label">💡 实体洞察</span>这是一条模型发布消息，但Grok用不了（国内访问困难），而且国内豆包、通义千问完全免费且好用。实体店老板不要为了&#x27;AI新模型&#x27;盲目付费，日常文案、作图用国产工具就够了，这个会员优惠跟你没关系。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -704,7 +735,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">Grok 4.6发布，购买SuperGrok会员可获赠Cursor Ultra。</div></div>
-<div class="card"><div class="card-top"><span class="score skip">62</span><h3><a href="https://x.com/op7418/status/2087582937395147196">SpaceX AI 发布了 Grok 4.6 模型，然后价格还行，每百万输入输出分别为 2 和 6 美元。
+<div class="card" id="adv-skip-2"><div class="card-top"><span class="score skip">62</span><h3><a href="https://x.com/op7418/status/2087582937395147196">SpaceX AI 发布了 Grok 4.6 模型，然后价格还行，每百万输入输出分别为 2 和 6 美元。
 
 当然，如果你有 Twitter 的 Premium+的会员的话，依然可以通过 Grok B...</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="alternative">国产替代: DeepSeek</span><span class="alternative">国产替代: 豆包</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice skip">暂不跟进</span><span style="margin-left:auto">歸藏(guizang.ai)(@op7418)</span></div><div class="insight"><span class="label">💡 实体洞察</span>Grok 4.6虽然不错，但国内用不上，而且DeepSeek、豆包等免费模型已经能满足日常需求。实体老板不用考虑订阅海外模型，继续用国产工具就行，省钱省心。</div>
 <details class="deduce">
@@ -726,7 +757,7 @@ xAI发布了一款全新的Agent： Grok Bot ，按他们自己的说法：这�
 </div>
 </details>
 <div class="summary">SpaceX AI发布Grok 4.6，价格每百万token 2/6美元。</div></div></div></section>
-<section id="cat-5" class="cat-group"><h2 class="cat-title">🏪 平台与商业模式<span class="cat-count">3 条</span><span class="cat-desc">大厂动态 / 收费 / 广告 / 流量入口</span></h2><div class="cat-cards"><div class="card"><div class="card-top"><span class="score watch">82</span><h3><a href="https://x.com/xiaohu/status/2087531720015000020">微信官宣了自己的模型
+<section id="cat-5" class="cat-group"><h2 class="cat-title">🏪 平台与商业模式<span class="cat-count">3 条</span><span class="cat-desc">大厂动态 / 收费 / 广告 / 流量入口</span></h2><div class="cat-cards"><div class="card" id="adv-watch-4"><div class="card-top"><span class="score watch">82</span><h3><a href="https://x.com/xiaohu/status/2087531720015000020">微信官宣了自己的模型
 
 目前其微信里的小微助手就是由该模型驱动的
 
@@ -756,7 +787,7 @@ WeLM-80B
 </div>
 </details>
 <div class="summary">微信自研WeLM模型，驱动小微助手调用小程序完成任务。</div></div>
-<div class="card"><div class="card-top"><span class="score watch">70</span><h3><a href="https://openai.com/index/how-enterprises-put-ai-to-work">From assistance to execution: How enterprises put AI to work</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice watch">观望</span><span style="margin-left:auto">OpenAI News</span></div><div class="insight"><span class="label">💡 实体洞察</span>OpenAI发布企业AI落地报告，说明AI正在从聊天助手变成真正干活的员工。但这是大企业的玩法，需要IT团队和预算。开封的小店主不用照搬，但可以从中看到趋势：以后AI自动处理客服、报表会越来越普遍。现在还是先观察，等国内平台推出适合小店的产品再用。</div>
+<div class="card" id="adv-watch-5"><div class="card-top"><span class="score watch">70</span><h3><a href="https://openai.com/index/how-enterprises-put-ai-to-work">From assistance to execution: How enterprises put AI to work</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice watch">观望</span><span style="margin-left:auto">OpenAI News</span></div><div class="insight"><span class="label">💡 实体洞察</span>OpenAI发布企业AI落地报告，说明AI正在从聊天助手变成真正干活的员工。但这是大企业的玩法，需要IT团队和预算。开封的小店主不用照搬，但可以从中看到趋势：以后AI自动处理客服、报表会越来越普遍。现在还是先观察，等国内平台推出适合小店的产品再用。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -776,7 +807,7 @@ WeLM-80B
 </div>
 </details>
 <div class="summary">OpenAI报告揭示企业如何采用Agentic AI和Codex。</div></div>
-<div class="card"><div class="card-top"><span class="score watch">60</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&amp;mid=2247561885&amp;idx=1&amp;sn=c2debdbc284ae35755f55e1f301d8376">千问AI Arena上线：给Agent一个真实的战场</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">跨境电商</span><span class="alternative">国产替代: 通义千问</span><span class="alternative">国产替代: 即梦</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice watch">观望</span><span style="margin-left:auto">阿里云开发者</span></div><div class="insight"><span class="label">💡 实体洞察</span>阿里云上线千问AI Arena，第一个任务是让Agent自动生成跨境电商商品上架素材（文案、主图、视频）。如果你是做电商或外贸的老板，这个方向有价值，但目前是开发者挑战赛，你只能等赛果转化成产品。现在观望，等成熟后可以用它批量生成商品素材，节省美工费用。</div>
+<div class="card" id="adv-watch-6"><div class="card-top"><span class="score watch">60</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MzIzOTU0NTQ0MA==&amp;mid=2247561885&amp;idx=1&amp;sn=c2debdbc284ae35755f55e1f301d8376">千问AI Arena上线：给Agent一个真实的战场</a></h3></div><div class="meta-line"><span class="industry">零售</span><span class="industry">跨境电商</span><span class="alternative">国产替代: 通义千问</span><span class="alternative">国产替代: 即梦</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 中</span><span class="badge advice watch">观望</span><span style="margin-left:auto">阿里云开发者</span></div><div class="insight"><span class="label">💡 实体洞察</span>阿里云上线千问AI Arena，第一个任务是让Agent自动生成跨境电商商品上架素材（文案、主图、视频）。如果你是做电商或外贸的老板，这个方向有价值，但目前是开发者挑战赛，你只能等赛果转化成产品。现在观望，等成熟后可以用它批量生成商品素材，节省美工费用。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -796,7 +827,7 @@ WeLM-80B
 </div>
 </details>
 <div class="summary">阿里千问AI Arena上线，首个任务聚焦跨境电商商品上架Agent。</div></div></div></section>
-<section id="cat-6" class="cat-group"><h2 class="cat-title">🏛️ 政策与宏观<span class="cat-count">1 条</span><span class="cat-desc">政策 / 行业报告 / 投融资</span></h2><div class="cat-cards"><div class="card"><div class="card-top"><span class="score watch">60</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjM5MjQ4MQ==&amp;mid=2651786324&amp;idx=2&amp;sn=b87f80948d4e42449ffbede3888bff00">国务院重磅发布的AI新政，到底说了些什么？</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice watch">观望</span><span style="margin-left:auto">刘润</span></div><div class="insight"><span class="label">💡 实体洞察</span>这是国家发布的“人工智能+”行动意见解读，说明国家要推动AI与各行业结合。对实体店老板来说，未来会有更多政策扶持和AI工具落地，现在不用急着行动，但可以多留意本地政府的AI补贴和培训，别错过红利。</div>
+<section id="cat-6" class="cat-group"><h2 class="cat-title">🏛️ 政策与宏观<span class="cat-count">1 条</span><span class="cat-desc">政策 / 行业报告 / 投融资</span></h2><div class="cat-cards"><div class="card" id="adv-watch-7"><div class="card-top"><span class="score watch">60</span><h3><a href="https://mp.weixin.qq.com/s?__biz=MjM5NjM5MjQ4MQ==&amp;mid=2651786324&amp;idx=2&amp;sn=b87f80948d4e42449ffbede3888bff00">国务院重磅发布的AI新政，到底说了些什么？</a></h3></div><div class="meta-line"><span class="industry">通用办公</span><span class="badge maturity">正式可用</span><span class="badge effort">门槛 低</span><span class="badge advice watch">观望</span><span style="margin-left:auto">刘润</span></div><div class="insight"><span class="label">💡 实体洞察</span>这是国家发布的“人工智能+”行动意见解读，说明国家要推动AI与各行业结合。对实体店老板来说，未来会有更多政策扶持和AI工具落地，现在不用急着行动，但可以多留意本地政府的AI补贴和培训，别错过红利。</div>
 <details class="deduce">
 <summary>📇 顾问行动卡片<span class="d-arrow">▼</span></summary>
 <div class="d-body">
@@ -851,6 +882,21 @@ function copyWx(el){
   });
   window.addEventListener("hashchange", function(){ setActive(location.hash); });
   setActive(location.hash);
+})();
+</script>
+
+<script>
+(function(){
+  var advChips = document.querySelectorAll(".adv-chip");
+  function setAdvActive(hash){
+    advChips.forEach(function(c){
+      var h = c.getAttribute("href");
+      c.classList.toggle("active", hash.indexOf(h) === 0);
+    });
+  }
+  advChips.forEach(function(c){ c.addEventListener("click", function(){ setAdvActive(c.getAttribute("href")); }); });
+  window.addEventListener("hashchange", function(){ setAdvActive(location.hash); });
+  setAdvActive(location.hash);
 })();
 </script>
 </body>
