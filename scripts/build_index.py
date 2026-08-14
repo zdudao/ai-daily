@@ -143,6 +143,8 @@ def inject_adv(html: str) -> str:
     """
     # --- 1) 清理旧注入，保证可重复运行且能升级旧版本 ---
     html = re.sub(re.escape(ADV_BEGIN) + r".*?" + re.escape(ADV_END), "", html, flags=re.S)
+    # 移除所有已存在的行动分级导航块（新版 html_render 自带/旧版注入均无标记，按结构特征清）
+    html = re.sub(r'<nav class="adv-nav">.*?</nav>', "", html, flags=re.S)
     html = re.sub(r"<style>\s*\.adv-nav\s*\{.*?</style>", "", html, flags=re.S)
     # 只删除"行动分级"脚本块（特征：包含 .adv-chip 选择器），不影响页面原有脚本
     html = re.sub(
@@ -265,8 +267,8 @@ def main() -> int:
 
     latest = files[-1]
 
-    # 1) 历史日报注入侧栏导航（不含最新一份，它作为首页内容源）
-    for f in files[:-1]:
+    # 1) 所有日报注入侧栏导航（含最新一份，保证任意日期页都能返回首页/切换日期）
+    for f in files:
         html = open(f, encoding="utf-8").read()
         new = inject(html, prefix="", home="../index.html", files=files, current=f)
         new = inject_adv(new)
@@ -275,7 +277,7 @@ def main() -> int:
                 fh.write(new)
             print(f"↪ 已注入导航: {f}")
 
-    # 2) 最新日报 -> 首页 index.html（链接带 news-data/ 前缀，返回首页指向自身）
+    # 2) 最新日报 -> 首页 index.html（index 版导航：链接带 news-data/ 前缀，返回首页指向自身）
     html = open(latest, encoding="utf-8").read()
     html = inject(html, prefix="news-data/", home="index.html", files=files, current=latest)
     html = inject_adv(html)
