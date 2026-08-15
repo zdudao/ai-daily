@@ -100,9 +100,38 @@ ADV_STYLE = """
 </style>
 """
 
-# 脚本必须放在 body 末尾执行（此时 .adv-chip 已存在于 DOM），否则监听器绑定失败
+# 完整页面脚本（copyWx + 分类高亮 + 行动分级过滤）。必须放 body 末尾执行。
+# 因清理旧版日报的注入脚本时会整块移除原 <script>（含 copyWx），这里一次性补齐完整功能。
 ADV_SCRIPT = """
 <script>
+function copyWx(el){
+  var text = "xuyang2946";
+  var tip = el.querySelector(".tip");
+  var ok = function(){ if (tip){ tip.textContent = "已复制 ✓"; setTimeout(function(){ tip.textContent = "点击复制"; }, 2000); } };
+  var fail = function(){ if (tip) tip.textContent = "复制失败，请手动添加"; };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(ok).catch(fail);
+  } else {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); ok(); } catch (e) { fail(); }
+    document.body.removeChild(ta);
+  }
+}
+(function(){
+  var chips = document.querySelectorAll(".cat-chip");
+  function setActive(hash){ chips.forEach(function(c){ c.classList.toggle("active", c.getAttribute("href") === hash); }); }
+  chips.forEach(function(c){
+    c.addEventListener("click", function(){
+      setActive(c.getAttribute("href"));
+      if (window.__advApply) window.__advApply("all");  // 点分类时恢复全部分级，避免看到空分类
+      document.querySelectorAll(".adv-chip").forEach(function(x){ x.classList.toggle("active", x.getAttribute("data-cls") === "all"); });
+    });
+  });
+  window.addEventListener("hashchange", function(){ setActive(location.hash); });
+  setActive(location.hash);
+})();
 (function(){
   var chips = document.querySelectorAll(".adv-chip");
   var cards = document.querySelectorAll(".card[data-adv]");
@@ -115,6 +144,7 @@ ADV_SCRIPT = """
       s.style.display = any ? "" : "none";
     });
   }
+  window.__advApply = apply;
   chips.forEach(function(c){
     c.addEventListener("click", function(){
       chips.forEach(function(x){ x.classList.toggle("active", x === c); });
@@ -178,6 +208,84 @@ DONATE_STYLE = """
 
 DONATE_BEGIN = "<!--DONATE-->"
 DONATE_END = "<!--/DONATE-->"
+
+# 移动端导航抽屉：顶栏收成一条细栏（品牌 + ☰ 按钮），点击展开全屏导航
+MENU_BTN_BEGIN = "<!--MENU_BTN-->"
+MENU_BTN_END = "<!--/MENU_BTN-->"
+MENU_JS_BEGIN = "<!--MENU_JS-->"
+MENU_JS_END = "<!--/MENU_JS-->"
+
+MENU_BTN = (
+    MENU_BTN_BEGIN
+    + '<button class="menu-toggle" aria-label="菜单">☰</button>'
+    + MENU_BTN_END
+)
+
+MENU_JS = (
+    MENU_JS_BEGIN
+    + """
+<style>
+.menu-toggle{display:none}
+@media (max-width:860px){
+  .sidebar{padding:6px 12px !important;display:flex !important;flex-direction:row !important;align-items:center;gap:10px;background:var(--bg,#121212);z-index:20}
+  .brand{display:flex !important;align-items:baseline;gap:8px;margin:0 !important;padding:0 !important;font-size:16px;line-height:1;white-space:nowrap}
+  .brand .brand-sub{font-size:11px;margin:0}
+  .menu-toggle{display:block;margin-left:auto;background:rgba(255,255,255,.04);border:1px solid #2a2a2a;border-radius:8px;color:#e0e0e0;font-size:17px;line-height:1;padding:6px 12px;cursor:pointer;flex-shrink:0}
+  .cat-nav,.adv-nav,.arc-nav,.donate.donate-inner{display:none !important}
+  .sidebar.menu-open{
+    position:fixed;inset:0;width:100%;height:100%;z-index:999;
+    display:flex !important;flex-direction:column !important;align-items:stretch;
+    padding:16px 12px 30px;overflow-y:auto;background:#121212;gap:0;
+  }
+  .sidebar.menu-open .brand{display:flex !important;align-items:center;width:100%;margin:0 0 12px !important}
+  .sidebar.menu-open .menu-toggle{position:fixed;top:12px;right:12px;margin:0}
+  .sidebar.menu-open .cat-nav{display:flex !important;flex-direction:column;align-items:stretch;overflow:visible}
+  .sidebar.menu-open .adv-nav{display:flex !important;flex-direction:column;align-items:stretch}
+  .sidebar.menu-open .arc-nav{display:block !important}
+  .sidebar.menu-open .donate.donate-inner{display:block !important;margin:16px 4px 0}
+  .sidebar.menu-open .arc-list{flex-direction:column;overflow:visible}
+  .sidebar.menu-open .arc-month-label{flex-shrink:1;margin:9px 0 4px}
+  .sidebar.menu-open .adv-label{width:auto}
+}
+</style>
+<script>
+(function(){
+  var btn=document.querySelector(".menu-toggle"), side=document.querySelector(".sidebar");
+  if(!btn||!side)return;
+  function close(){ side.classList.remove("menu-open"); btn.textContent="☰"; document.body.style.overflow=""; }
+  btn.addEventListener("click",function(){
+    var open=side.classList.toggle("menu-open");
+    btn.textContent=open?"✕":"☰";
+    document.body.style.overflow=open?"hidden":"";
+  });
+  document.querySelectorAll(".adv-chip,.cat-chip,.arc-link").forEach(function(c){
+    c.addEventListener("click",close);
+  });
+  window.addEventListener("resize",function(){
+    if(window.innerWidth>860&&side.classList.contains("menu-open")){ close(); }
+  });
+})();
+</script>
+"""
+    + MENU_JS_END
+)
+
+
+def inject_menu(html: str) -> str:
+    """移动端导航抽屉：细顶栏 + ☰ 按钮 + 全屏菜单。幂等。"""
+    # 清理旧注入
+    html = re.sub(re.escape(MENU_BTN_BEGIN) + r".*?" + re.escape(MENU_BTN_END), "", html, flags=re.S)
+    html = re.sub(re.escape(MENU_JS_BEGIN) + r".*?" + re.escape(MENU_JS_END), "", html, flags=re.S)
+    # ☰ 按钮插到品牌 div 之后（兄弟元素，才能靠 margin-left:auto 推到顶栏右侧）
+    m = re.search(r'<div class="brand">.*?</div>', html, flags=re.S)
+    if m:
+        html = html[: m.end()] + MENU_BTN + html[m.end():]
+    # 样式 + 脚本插到 </body> 前
+    bidx = html.rfind("</body>")
+    if bidx != -1:
+        html = html[:bidx] + MENU_JS + html[bidx:]
+    return html
+
 DONATE_PANEL_BEGIN = "<!--DONATE_PANEL-->"
 DONATE_PANEL_END = "<!--/DONATE_PANEL-->"
 
@@ -375,6 +483,7 @@ def main() -> int:
         new = inject(html, prefix="", home="../index.html", files=files, current=f)
         new = inject_adv(new)
         new = inject_donate(new, "../")
+        new = inject_menu(new)
         if new != html:
             with open(f, "w", encoding="utf-8") as fh:
                 fh.write(new)
@@ -385,6 +494,7 @@ def main() -> int:
     html = inject(html, prefix="news-data/", home="index.html", files=files, current=latest)
     html = inject_adv(html)
     html = inject_donate(html, "")
+    html = inject_menu(html)
     with open(INDEX, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"✅ 首页已生成: {INDEX}（最新日报 {latest}，历史 {len(files) - 1} 条）")
