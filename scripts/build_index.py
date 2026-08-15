@@ -317,12 +317,11 @@ DONATE_PANEL_END = "<!--/DONATE_PANEL-->"
 def _donate_card(prefix: str, extra_cls: str) -> str:
     return (
         '<div class="donate ' + extra_cls + '">'
-        + '<p class="donate-title">☕ 请老许喝碗胡辣汤</p>'
-        + '<p class="donate-desc">这份日报每天抓取几百条 AI 资讯、逐条研判、'
-          '写成开封话讲给你听，背后是实打实的人工和算力成本。'
-          '觉得有用，扫码支持一下，让日报能一直做下去。</p>'
+        + '<p class="donate-title">这碗胡辣汤，老许请客，你买单</p>'
+        + '<p class="donate-desc">日报每天人工+AI 逐条研判几百条资讯，免费送到你手里。'
+          '觉得值，一碗胡辣汤就是最大的支持——明天老许接着干。</p>'
         + f'<img class="donate-qr" src="{prefix}donate.png" alt="打赏二维码">'
-        + '<p class="donate-tip">微信 / 支付宝 扫码打赏</p>'
+        + '<p class="donate-tip">微信 / 支付宝 扫码支持</p>'
         + "</div>"
     )
 
@@ -353,16 +352,15 @@ def inject_donate(html: str, prefix: str) -> str:
     )
     fab = (
         DONATE_BEGIN
-        + '<button class="donate-fab" aria-label="打赏">☕ 打赏</button>'
+        + '<button class="donate-fab" aria-label="打赏">☕ 请老许喝碗胡辣汤</button>'
         + '<div class="donate-modal">'
         + '<div class="donate-modal-box">'
         + '<button class="donate-modal-close" aria-label="关闭">✕</button>'
-        + '<p class="donate-title">☕ 请老许喝碗胡辣汤</p>'
-        + '<p class="donate-desc">这份日报每天抓取几百条 AI 资讯、逐条研判、'
-          '写成开封话讲给你听，背后是实打实的人工和算力成本。'
-          '觉得有用，扫码支持一下，让日报能一直做下去。</p>'
+        + '<p class="donate-title">这碗胡辣汤，老许请客，你买单</p>'
+        + '<p class="donate-desc">日报每天人工+AI 逐条研判几百条资讯，免费送到你手里。'
+          '觉得值，一碗胡辣汤就是最大的支持——明天老许接着干。</p>'
         + f'<img class="donate-qr" src="{prefix}donate.png" alt="打赏二维码">'
-        + '<p class="donate-tip">微信 / 支付宝 扫码打赏</p>'
+        + '<p class="donate-tip">微信 / 支付宝 扫码支持</p>'
         + "</div></div>"
         + '<script>'
         + '(function(){var f=document.querySelector(".donate-fab"),m=document.querySelector(".donate-modal");'
