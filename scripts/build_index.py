@@ -132,14 +132,37 @@ ADV_SCRIPT = """
 ADV_BEGIN = "<!--ADV_NAV-->"
 ADV_END = "<!--/ADV_NAV-->"
 
-# 打赏卡片：样式 + 结构（图片按目录区分前缀：index 用根目录，日报用 ../）
+# 打赏：右侧独立大卡片（桌面端）+ 侧栏小卡片（移动端），图片按目录区分前缀
 DONATE_STYLE = """
 <style>
+.page { max-width: 1380px; }
+/* 右侧打赏列（桌面端独立一列，sticky 固定） */
+.donate-panel {
+  position: sticky; top: 0;
+  flex-shrink: 0; width: 240px;
+  height: 100vh; box-sizing: border-box;
+  padding: 28px 8px 24px;
+  overflow-y: auto;
+}
+.donate-panel .donate {
+  margin: 0 4px; padding: 20px 16px;
+  background: #1a1a1a;
+  border: 1px solid rgba(196,237,26,.15);
+  border-radius: 14px; text-align: center;
+}
+.donate-panel .donate-title { font-size: 14px; margin: 0 0 10px; }
+.donate-panel .donate-desc { font-size: 12.5px; margin: 0 0 14px; }
+.donate-panel .donate-qr { width: 200px; height: 200px; margin: 0 auto; }
+.donate-panel .donate-tip { font-size: 12px; margin: 10px 0 0; }
+/* 侧栏小卡片（移动端顶栏里保留入口） */
 .donate{margin:18px 4px 0;padding:14px;background:#1a1a1a;border:1px solid rgba(196,237,26,.15);border-radius:12px;text-align:center}
 .donate-title{color:#c4ed1a;font-size:13px;font-weight:700;letter-spacing:.5px;margin:0 0 6px}
 .donate-desc{color:#888;font-size:11.5px;line-height:1.65;margin:0 0 10px;text-align:left}
 .donate-qr{width:118px;height:118px;border-radius:8px;border:1px solid #2a2a2a;object-fit:contain;background:#fff;padding:4px;box-sizing:border-box}
 .donate-tip{color:#6b6f7a;font-size:11px;margin:8px 0 0;letter-spacing:.5px}
+/* 桌面端（≥1101px）只显示右侧大卡片；移动端（≤1100px）只显示侧栏小卡片 */
+@media (min-width:1101px){ .donate-inner{ display:none !important; } }
+@media (max-width:1100px){ .donate-panel{ display:none !important; } }
 @media (max-width:860px){
   .donate{margin:8px 4px 0}
   .donate-qr{width:92px;height:92px}
@@ -150,21 +173,13 @@ DONATE_STYLE = """
 
 DONATE_BEGIN = "<!--DONATE-->"
 DONATE_END = "<!--/DONATE-->"
+DONATE_PANEL_BEGIN = "<!--DONATE_PANEL-->"
+DONATE_PANEL_END = "<!--/DONATE_PANEL-->"
 
 
-def inject_donate(html: str, prefix: str) -> str:
-    """侧栏底部注入打赏赞助卡片（每次重建，prefix 按页面目录区分）。"""
-    # 清理旧注入（含历史残缺块），保证 index/daily 目录前缀正确
-    html = re.sub(r"</div>\s*<!--DONATE-->", "<!--DONATE-->", html)  # 删除游离闭合标签残留
-    html = re.sub(re.escape(DONATE_BEGIN) + r".*?" + re.escape(DONATE_END), "", html, flags=re.S)
-    html = re.sub(r'<div class="donate">.*?</div>', "", html, flags=re.S)
-    html = re.sub(r'<div class="donate-(?:title|desc|tip)">.*?</div>', "", html, flags=re.S)
-    html = re.sub(r'<img class="donate-qr"[^>]*>', "", html)
-    html = re.sub(r"<style>\s*\.donate\s*\{.*?</style>", "", html, flags=re.S)
-    block = (
-        DONATE_BEGIN
-        + DONATE_STYLE
-        + '<div class="donate">'
+def _donate_card(prefix: str, extra_cls: str) -> str:
+    return (
+        '<div class="donate ' + extra_cls + '">'
         + '<p class="donate-title">☕ 请老许喝碗胡辣汤</p>'
         + '<p class="donate-desc">这份日报每天抓取几百条 AI 资讯、逐条研判、'
           '写成开封话讲给你听，背后是实打实的人工和算力成本。'
@@ -172,12 +187,47 @@ def inject_donate(html: str, prefix: str) -> str:
         + f'<img class="donate-qr" src="{prefix}donate.png" alt="打赏二维码">'
         + '<p class="donate-tip">微信 / 支付宝 扫码打赏</p>'
         + "</div>"
+    )
+
+
+def inject_donate(html: str, prefix: str) -> str:
+    """注入打赏入口：桌面端右侧独立大卡片（sticky）+ 移动端侧栏小卡片。"""
+    # 清理旧注入（含历史残缺块）
+    html = re.sub(r"</div>\s*<!--DONATE-->", "<!--DONATE-->", html)
+    html = re.sub(re.escape(DONATE_BEGIN) + r".*?" + re.escape(DONATE_END), "", html, flags=re.S)
+    html = re.sub(re.escape(DONATE_PANEL_BEGIN) + r".*?" + re.escape(DONATE_PANEL_END), "", html, flags=re.S)
+    html = re.sub(r'<aside class="donate-panel">.*?</aside>', "", html, flags=re.S)
+    html = re.sub(r'<div class="donate donate-inner">.*?</div>', "", html, flags=re.S)
+    html = re.sub(r'<div class="donate">.*?</div>', "", html, flags=re.S)
+    html = re.sub(r'<div class="donate-(?:title|desc|tip)">.*?</div>', "", html, flags=re.S)
+    html = re.sub(r'<img class="donate-qr"[^>]*>', "", html)
+    html = re.sub(r"<style>.*?\.donate-panel.*?</style>", "", html, flags=re.S)
+    html = re.sub(r"<style>.*?\.donate\s*\{.*?</style>", "", html, flags=re.S)
+
+    panel = (
+        DONATE_PANEL_BEGIN
+        + DONATE_STYLE
+        + '<aside class="donate-panel">'
+        + _donate_card(prefix, "")
+        + "</aside>"
+        + DONATE_PANEL_END
+    )
+    inner = (
+        DONATE_BEGIN
+        + _donate_card(prefix, "donate-inner")
         + DONATE_END
     )
-    idx = html.rfind("</aside>")
-    if idx == -1:
+
+    # 右侧大卡片（含样式）：插到 </main> 后（.page 闭合 </div> 前）
+    midx = html.rfind("</main>")
+    if midx == -1:
         return html
-    return html[:idx] + block + html[idx:]
+    html = html[: midx + len("</main>")] + panel + html[midx + len("</main>"):]
+    # 侧栏小卡片：插到侧栏 </aside> 前（第一个 </aside>，panel 的在后面）
+    aidx = html.find("</aside>")
+    if aidx != -1:
+        html = html[:aidx] + inner + html[aidx:]
+    return html
 
 
 def inject_adv(html: str) -> str:
