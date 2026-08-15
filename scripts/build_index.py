@@ -132,6 +132,53 @@ ADV_SCRIPT = """
 ADV_BEGIN = "<!--ADV_NAV-->"
 ADV_END = "<!--/ADV_NAV-->"
 
+# 打赏卡片：样式 + 结构（图片按目录区分前缀：index 用根目录，日报用 ../）
+DONATE_STYLE = """
+<style>
+.donate{margin:18px 4px 0;padding:14px;background:#1a1a1a;border:1px solid rgba(196,237,26,.15);border-radius:12px;text-align:center}
+.donate-title{color:#c4ed1a;font-size:13px;font-weight:700;letter-spacing:.5px;margin:0 0 6px}
+.donate-desc{color:#888;font-size:11.5px;line-height:1.65;margin:0 0 10px;text-align:left}
+.donate-qr{width:118px;height:118px;border-radius:8px;border:1px solid #2a2a2a;object-fit:contain;background:#fff;padding:4px;box-sizing:border-box}
+.donate-tip{color:#6b6f7a;font-size:11px;margin:8px 0 0;letter-spacing:.5px}
+@media (max-width:860px){
+  .donate{margin:8px 4px 0}
+  .donate-qr{width:92px;height:92px}
+}
+</style>
+"""
+
+
+DONATE_BEGIN = "<!--DONATE-->"
+DONATE_END = "<!--/DONATE-->"
+
+
+def inject_donate(html: str, prefix: str) -> str:
+    """侧栏底部注入打赏赞助卡片（每次重建，prefix 按页面目录区分）。"""
+    # 清理旧注入（含历史残缺块），保证 index/daily 目录前缀正确
+    html = re.sub(r"</div>\s*<!--DONATE-->", "<!--DONATE-->", html)  # 删除游离闭合标签残留
+    html = re.sub(re.escape(DONATE_BEGIN) + r".*?" + re.escape(DONATE_END), "", html, flags=re.S)
+    html = re.sub(r'<div class="donate">.*?</div>', "", html, flags=re.S)
+    html = re.sub(r'<div class="donate-(?:title|desc|tip)">.*?</div>', "", html, flags=re.S)
+    html = re.sub(r'<img class="donate-qr"[^>]*>', "", html)
+    html = re.sub(r"<style>\s*\.donate\s*\{.*?</style>", "", html, flags=re.S)
+    block = (
+        DONATE_BEGIN
+        + DONATE_STYLE
+        + '<div class="donate">'
+        + '<p class="donate-title">☕ 请老许喝碗胡辣汤</p>'
+        + '<p class="donate-desc">这份日报每天抓取几百条 AI 资讯、逐条研判、'
+          '写成开封话讲给你听，背后是实打实的人工和算力成本。'
+          '觉得有用，扫码支持一下，让日报能一直做下去。</p>'
+        + f'<img class="donate-qr" src="{prefix}donate.png" alt="打赏二维码">'
+        + '<p class="donate-tip">微信 / 支付宝 扫码打赏</p>'
+        + "</div>"
+        + DONATE_END
+    )
+    idx = html.rfind("</aside>")
+    if idx == -1:
+        return html
+    return html[:idx] + block + html[idx:]
+
 
 def inject_adv(html: str) -> str:
     """给日报补注入/重建"行动分级"导航（过滤 + 分级图标）。
@@ -272,6 +319,7 @@ def main() -> int:
         html = open(f, encoding="utf-8").read()
         new = inject(html, prefix="", home="../index.html", files=files, current=f)
         new = inject_adv(new)
+        new = inject_donate(new, "../")
         if new != html:
             with open(f, "w", encoding="utf-8") as fh:
                 fh.write(new)
@@ -281,6 +329,7 @@ def main() -> int:
     html = open(latest, encoding="utf-8").read()
     html = inject(html, prefix="news-data/", home="index.html", files=files, current=latest)
     html = inject_adv(html)
+    html = inject_donate(html, "")
     with open(INDEX, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"✅ 首页已生成: {INDEX}（最新日报 {latest}，历史 {len(files) - 1} 条）")
