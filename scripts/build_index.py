@@ -189,13 +189,37 @@ DONATE_STYLE = """
   background: #fff; box-sizing: border-box; object-fit: contain;
 }
 .donate-panel .donate-tip { font-size: 13px; margin: 12px 0 0; }
-/* 侧栏小卡片（移动端顶栏里保留入口） */
+/* 侧栏小卡片（不再注入，保留样式兜底） */
 .donate{margin:18px 4px 0;padding:14px;background:#1a1a1a;border:1px solid rgba(196,237,26,.15);border-radius:12px;text-align:center}
 .donate-title{color:#c4ed1a;font-size:14px;font-weight:700;letter-spacing:.5px;margin:0 0 8px}
 .donate-desc{color:#888;font-size:12.5px;line-height:1.7;margin:0 0 12px;text-align:left}
 .donate-qr{display:block;width:118px;height:118px;margin:0 auto;border-radius:8px;border:1px solid #2a2a2a;object-fit:contain;background:#fff;padding:4px;box-sizing:border-box}
 .donate-tip{color:#6b6f7a;font-size:12px;margin:10px 0 0;letter-spacing:.5px}
-/* 桌面端（≥1101px）只显示右侧大卡片；移动端（≤1100px）只显示侧栏小卡片 */
+/* 移动端浮动打赏按钮 + 二维码弹窗 */
+.donate-fab,.donate-modal{display:none}
+@media (max-width:860px){
+  .donate-fab{
+    display:flex;position:fixed;right:14px;bottom:18px;z-index:998;
+    align-items:center;gap:6px;
+    background:linear-gradient(135deg,#c4ed1a,#9cc70f);
+    color:#121212;font-weight:700;font-size:14px;
+    padding:12px 18px;border:none;border-radius:50px;
+    box-shadow:0 6px 20px rgba(0,0,0,.45);cursor:pointer;
+  }
+  .donate-modal{
+    display:none;position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,.72);
+    align-items:center;justify-content:center;padding:24px;
+  }
+  .donate-modal.open{display:flex}
+  .donate-modal-box{background:#1a1a1a;border:1px solid rgba(196,237,26,.2);border-radius:16px;padding:24px 20px;text-align:center;position:relative;max-width:320px;width:100%}
+  .donate-modal-close{position:absolute;top:10px;right:12px;background:none;border:none;color:#888;font-size:18px;cursor:pointer;padding:4px}
+  .donate-modal-box .donate-title{font-size:16px;margin:0 0 10px}
+  .donate-modal-box .donate-desc{font-size:13px;line-height:1.7;margin:0 0 12px;text-align:left}
+  .donate-modal-box .donate-qr{width:200px;height:200px;margin:0 auto;display:block;border-radius:10px;border:1px solid #3a3a3a;background:#fff;padding:6px;box-sizing:border-box;object-fit:contain}
+  .donate-modal-box .donate-tip{font-size:12px;margin:10px 0 0}
+}
+/* 桌面端（≥1101px）只显示右侧大卡片 */
 @media (min-width:1101px){ .donate-inner{ display:none !important; } }
 @media (max-width:1100px){ .donate-panel{ display:none !important; } }
 @media (max-width:860px){
@@ -304,12 +328,14 @@ def _donate_card(prefix: str, extra_cls: str) -> str:
 
 
 def inject_donate(html: str, prefix: str) -> str:
-    """注入打赏入口：桌面端右侧独立大卡片（sticky）+ 移动端侧栏小卡片。"""
+    """注入打赏入口：桌面端右侧大卡片（sticky）+ 移动端浮动打赏按钮与二维码弹窗。"""
     # 清理旧注入（含历史残缺块）
     html = re.sub(r"</div>\s*<!--DONATE-->", "<!--DONATE-->", html)
     html = re.sub(re.escape(DONATE_BEGIN) + r".*?" + re.escape(DONATE_END), "", html, flags=re.S)
     html = re.sub(re.escape(DONATE_PANEL_BEGIN) + r".*?" + re.escape(DONATE_PANEL_END), "", html, flags=re.S)
     html = re.sub(r'<aside class="donate-panel">.*?</aside>', "", html, flags=re.S)
+    html = re.sub(r'<button class="donate-fab".*?</button>', "", html, flags=re.S)
+    html = re.sub(r'<div class="donate-modal">.*?</div>\s*(?=</body>)', "", html, flags=re.S)
     html = re.sub(r'<div class="donate donate-inner">.*?</div>', "", html, flags=re.S)
     html = re.sub(r'<div class="donate">.*?</div>', "", html, flags=re.S)
     html = re.sub(r'<div class="donate-(?:title|desc|tip)">.*?</div>', "", html, flags=re.S)
@@ -325,9 +351,28 @@ def inject_donate(html: str, prefix: str) -> str:
         + "</aside>"
         + DONATE_PANEL_END
     )
-    inner = (
+    fab = (
         DONATE_BEGIN
-        + _donate_card(prefix, "donate-inner")
+        + '<button class="donate-fab" aria-label="打赏">☕ 打赏</button>'
+        + '<div class="donate-modal">'
+        + '<div class="donate-modal-box">'
+        + '<button class="donate-modal-close" aria-label="关闭">✕</button>'
+        + '<p class="donate-title">☕ 请老许喝碗胡辣汤</p>'
+        + '<p class="donate-desc">这份日报每天抓取几百条 AI 资讯、逐条研判、'
+          '写成开封话讲给你听，背后是实打实的人工和算力成本。'
+          '觉得有用，扫码支持一下，让日报能一直做下去。</p>'
+        + f'<img class="donate-qr" src="{prefix}donate.png" alt="打赏二维码">'
+        + '<p class="donate-tip">微信 / 支付宝 扫码打赏</p>'
+        + "</div></div>"
+        + '<script>'
+        + '(function(){var f=document.querySelector(".donate-fab"),m=document.querySelector(".donate-modal");'
+        + 'if(!f||!m)return;'
+        + 'f.addEventListener("click",function(){m.classList.add("open");});'
+        + 'var c=m.querySelector(".donate-modal-close");'
+        + 'if(c)c.addEventListener("click",function(){m.classList.remove("open");});'
+        + 'm.addEventListener("click",function(e){if(e.target===m)m.classList.remove("open");});'
+        + '})();'
+        + "</script>"
         + DONATE_END
     )
 
@@ -336,10 +381,10 @@ def inject_donate(html: str, prefix: str) -> str:
     if midx == -1:
         return html
     html = html[: midx + len("</main>")] + panel + html[midx + len("</main>"):]
-    # 侧栏小卡片：插到侧栏 </aside> 前（第一个 </aside>，panel 的在后面）
-    aidx = html.find("</aside>")
-    if aidx != -1:
-        html = html[:aidx] + inner + html[aidx:]
+    # 浮动按钮 + 弹窗 + 脚本：插到 </body> 前
+    bidx = html.rfind("</body>")
+    if bidx != -1:
+        html = html[:bidx] + fab + html[bidx:]
     return html
 
 
